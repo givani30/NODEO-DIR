@@ -55,6 +55,8 @@ class SpatialTransformer(nn.Module):
 def load_nii(path):
     X = nib.load(path)
     X = X.get_fdata()
+    X=np.squeeze(X)
+    print(" Break")
     return X
 
 def save_nii(img, savename):
@@ -65,12 +67,11 @@ def save_nii(img, savename):
 def generate_grid3D_tensor(shape):
     x_grid = torch.linspace(-1., 1., shape[0])
     y_grid = torch.linspace(-1., 1., shape[1])
-    z_grid = torch.linspace(-1., 1., shape[2])
-    x_grid, y_grid, z_grid = torch.meshgrid(x_grid, y_grid, z_grid)
+    x_grid, y_grid = torch.meshgrid(x_grid, y_grid)
 
     # Note that default the dimension in the grid is reversed:
     # z, y, x
-    grid = torch.stack([z_grid, y_grid, x_grid], dim=0)
+    grid = torch.stack([ y_grid, x_grid], dim=0)
     return grid
 
 def dice(array1, array2, labels):

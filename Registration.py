@@ -1,7 +1,7 @@
 import argparse
 import os
 import time
-from Network import BrainNet
+from Network2D import BrainNet
 from Loss import *
 from NeuralODE import *
 from Utils import *
@@ -50,7 +50,7 @@ def registration(config, device, moving, fixed):
     ode_train = NeuralODE(Network, config.optimizer, config.STEP_SIZE).to(device)
 
     # training loop
-    scale_factor = torch.tensor(im_shape).to(device).view(1, 3, 1, 1, 1) * 1.
+    scale_factor = torch.tensor(im_shape).to(device).view(1, 2, 1, 1) * 1.
     ST = SpatialTransformer(im_shape).to(device)  # spatial transformer to warp image
     grid = generate_grid3D_tensor(im_shape).unsqueeze(0).to(device)  # [-1,1]
 
@@ -124,16 +124,16 @@ if __name__ == '__main__':
                         dest="savepath", default='./result',
                         help="path for saving results")
     parser.add_argument("--fixed", type=str,
-                        dest="fixed", default='./data/OAS1_0001_MR1/brain.nii.gz',
+                        dest="fixed", default='./data/2D/OASIS_OAS1_0001_MR1/slice_norm.nii.gz',
                         help="fixed image data path")
     parser.add_argument("--moving", type=str,
-                        dest="moving", default='./data/OAS1_0002_MR1/brain.nii.gz',
+                        dest="moving", default='./data/2D/OASIS_OAS1_0002_MR1/slice_norm.nii.gz',
                         help="moving image data path")
     parser.add_argument("--fixed_seg", type=str,
-                        dest="fixed_seg", default='./data/OAS1_0001_MR1/brain_aseg.nii.gz',
+                        dest="fixed_seg", default='./data/2D/OASIS_OAS1_0001_MR1/slice_seg4.nii.gz',
                         help="fixed image segmentation data path")
     parser.add_argument("--moving_seg", type=str,
-                        dest="moving_seg", default='./data/OAS1_0002_MR1/brain_aseg.nii.gz',
+                        dest="moving_seg", default='./data/OASIS_OAS1_0002_MR1/slice_seg4.nii.gz',
                         help="moving image segmentation data path")
     # Model configuration
     parser.add_argument("--ds", type=int,
