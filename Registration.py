@@ -114,7 +114,7 @@ def evaluation(config, device, df, df_with_grid):
     print('Avg. dice on %d structures: ' % len(label), np.mean(dice_move2fix[0]))
 
 def save_result(config, df, warped_moving):
-    save_nii(df.permute(2,3,4,0,1).detach().cpu().numpy(), '%s/df.nii.gz' % (config.savepath))
+    save_nii(df.permute(2,3,0,1).detach().cpu().numpy(), '%s/df.nii.gz' % (config.savepath))
     save_nii(warped_moving.detach().cpu().numpy(), '%s/warped.nii.gz' % (config.savepath))
 
 if __name__ == '__main__':
@@ -130,10 +130,10 @@ if __name__ == '__main__':
                         dest="moving", default='./data/2D/OASIS_OAS1_0002_MR1/slice_norm.nii.gz',
                         help="moving image data path")
     parser.add_argument("--fixed_seg", type=str,
-                        dest="fixed_seg", default='./data/2D/OASIS_OAS1_0001_MR1/slice_seg4.nii.gz',
+                        dest="fixed_seg", default='./data/2D/OASIS_OAS1_0001_MR1/slice_seg24.nii.gz',
                         help="fixed image segmentation data path")
     parser.add_argument("--moving_seg", type=str,
-                        dest="moving_seg", default='./data/OASIS_OAS1_0002_MR1/slice_seg4.nii.gz',
+                        dest="moving_seg", default='./data/2D/OASIS_OAS1_0002_MR1/slice_seg24.nii.gz',
                         help="moving image segmentation data path")
     # Model configuration
     parser.add_argument("--ds", type=int,
