@@ -60,7 +60,7 @@ def load_nii(path):
     return X
 
 def save_nii(img, savename):
-    affine = np.diag([1, 1, 1, 1])
+    affine = np.diag([1, 1, 1,1])
     new_img = nib.nifti1.Nifti1Image(img, affine, header=None)
     nib.save(new_img, savename)
 
@@ -87,3 +87,29 @@ def dice(array1, array2, labels):
     return dicem
 
 
+def plotDeformationField2D(flow, save_path=None):
+    """
+    Plots the deformation field as a vector field.
+    """
+    import matplotlib.pyplot as plt
+    import matplotlib.patches as mpatches
+    from matplotlib.colors import LinearSegmentedColormap
+
+    # create color map
+    flow=flow.cpu().numpy()
+    flow=flow.reshape()
+    colors = [(0, 0, 0), (0, 0, 1), (0, 1, 0), (1, 0, 0), (1, 1, 0), (1, 0, 1), (0, 1, 1), (1, 1, 1)]
+    cmap_name = 'my_list'
+    cm = LinearSegmentedColormap.from_list(cmap_name, colors, N=8)
+
+    # plot
+    plt.figure()
+    plt.imshow(flow[0, 0, ...], cmap=cm)
+    plt.quiver(flow[0, 1, ...], flow[0, 0, ...], scale=10, color='w')
+    plt.axis('off')
+    plt.title('Deformation Field')
+    red_patch = mpatches.Patch(color='red', label='Deformation Field')
+    plt.legend(handles=[red_patch])
+    if save_path is not None:
+        plt.savefig(save_path)
+    plt.show()

@@ -5,6 +5,7 @@ from Network2D import BrainNet
 from Loss import *
 from NeuralODE import *
 from Utils import *
+import matplotlib.pyplot as plt
 
 def main(config):
     device = torch.device(config.device)
@@ -12,13 +13,14 @@ def main(config):
     moving = load_nii(config.moving)
     assert fixed.shape == moving.shape  # two images to be registered must in the same size
     t = time.time()
-    df, df_with_grid, warped_moving = registration(config, device, moving, fixed)
+    df, df_with_grid, warped_moving ,Model_Trained= registration(config, device, moving, fixed)
     runtime = time.time() - t
     print('Registration Running Time:', runtime)
     print('---Registration DONE---')
-    evaluation(config, device, df, df_with_grid)
+    evaluation(config, device, df, df_with_grid,Model_Trained)
     print('---Evaluation DONE---')
     save_result(config, df, warped_moving)
+    save_nii(df_with_grid.permute(1,2,0,3).detach().cpu().numpy(),'%s/df_grid.nii.gz' % (config.savepath))
     print('---Results Saved---')
 
 
@@ -88,13 +90,43 @@ def registration(config, device, moving, fixed):
                 best_df = df.detach().clone()
                 best_df_with_grid = df_with_grid.detach().clone()
                 best_warped_moving = warped_moving.detach().clone()
-    return best_df, best_df_with_grid, best_warped_moving
+    model_trained=Network
+    return best_df, best_df_with_grid, best_warped_moving, model_trained
 
 
-def evaluation(config, device, df, df_with_grid):
+def evaluation(config, device, df, df_with_grid,Model_Trained):
+    #TODO:Plot deformation field
+    # #Create meshgrid of the same size as DF
+    x = torch.linspace(-1, 1, df.size(-1))
+    y = torch.linspace(-1, 1, df.size(-2))
+    xv, yv= torch.meshgrid(torch.arange(0,df.shape[2]),torch.arange(0,df.shape[3]))
+    grid=torch.stack([xv, yv],axis=-1)
+    # grid=torch.transpose(grid,(0,2,1))
+    grid=df_with_grid.reshape(160,192,2)
+    grid=grid.numpy()
+    # grid=grid.numpy()
+    # #Plot the deformation field
+    fig, ax = plt.subplots()
+    # grid=generate_grid3D_tensor([160,192])
+    # grid.reshape(1,2,160,192)
+    # deformed_grid=Model_Trained(grid)
+    ax.set_title("Grid with Interconnected Lines")
+
+    # Plot the grid
+    print("Plotting the grid")
+    
+    for i in range(160):
+        ax.plot(grid[i,:,0], grid[i,:,1], color="blue", linewidth=0.5)
+    for i in range(192):
+        ax.plot(grid[:,i, 0], grid[:,i,1], color="blue", linewidth=0.5)
+    #Retain aspect ratio of
+    # ax.set_aspect('square')
+    plt.show()
     ### Calculate Neg Jac Ratio
     neg_Jet = -1.0 * JacboianDet(df_with_grid)
+    #TODO: Plot
     neg_Jet = F.relu(neg_Jet)
+    #TODO: 2d plot with neg_Jet
     mean_neg_J = torch.sum(neg_Jet).detach().cpu().numpy()
     num_neg = len(torch.where(neg_Jet > 0)[0])
     total = neg_Jet.size(-1) * neg_Jet.size(-2) * neg_Jet.size(-3)
@@ -102,7 +134,8 @@ def evaluation(config, device, df, df_with_grid):
     print('Total of neg Jet: ', mean_neg_J)
     print('Ratio of neg Jet: ', ratio_neg_J)
     ### Calculate Dice
-    label = [2, 3, 4, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 24, 28, 41, 42, 43, 46, 47, 49, 50, 51, 52, 53, 54, 60]
+    # label = [2, 3, 4, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 24, 28, 41, 42, 43, 46, 47, 49, 50, 51, 52, 53, 54, 60]
+    label=range(24) #Dice: from segmentation
     fixed_seg = load_nii(config.fixed_seg)
     moving_seg = load_nii(config.moving_seg)
     ST_seg = SpatialTransformer(fixed_seg.shape, mode='nearest').to(device)
@@ -111,7 +144,8 @@ def evaluation(config, device, df, df_with_grid):
     moving_seg = moving_seg[None, None, ...]
     warped_seg = ST_seg(moving_seg, df, return_phi=False)
     dice_move2fix = dice(warped_seg.unsqueeze(0).unsqueeze(0).detach().cpu().numpy(), fixed_seg, label)
-    print('Avg. dice on %d structures: ' % len(label), np.mean(dice_move2fix[0]))
+    print('Avg. dice on %d structures: ' % len(label), np.mean(dice_move2fix))
+    print('Std dev. dice on %d structures: ' % len(label), np.std(dice_move2fix))
 
 def save_result(config, df, warped_moving):
     save_nii(df.permute(2,3,0,1).detach().cpu().numpy(), '%s/df.nii.gz' % (config.savepath))
@@ -124,16 +158,16 @@ if __name__ == '__main__':
                         dest="savepath", default='./result',
                         help="path for saving results")
     parser.add_argument("--fixed", type=str,
-                        dest="fixed", default='./data/2D/OASIS_OAS1_0001_MR1/slice_norm.nii.gz',
+                        dest="fixed", default='./data/2D/OASIS_OAS1_0010_MR1/slice_norm.nii.gz',
                         help="fixed image data path")
     parser.add_argument("--moving", type=str,
-                        dest="moving", default='./data/2D/OASIS_OAS1_0002_MR1/slice_norm.nii.gz',
+                        dest="moving", default='./data/2D/OASIS_OAS1_0020_MR1/slice_norm.nii.gz',
                         help="moving image data path")
     parser.add_argument("--fixed_seg", type=str,
-                        dest="fixed_seg", default='./data/2D/OASIS_OAS1_0001_MR1/slice_seg24.nii.gz',
+                        dest="fixed_seg", default='./data/2D/OASIS_OAS1_0010_MR1/slice_seg24.nii.gz',
                         help="fixed image segmentation data path")
     parser.add_argument("--moving_seg", type=str,
-                        dest="moving_seg", default='./data/2D/OASIS_OAS1_0002_MR1/slice_seg24.nii.gz',
+                        dest="moving_seg", default='./data/2D/OASIS_OAS1_0020_MR1/slice_seg24.nii.gz',
                         help="moving image segmentation data path")
     # Model configuration
     parser.add_argument("--ds", type=int,
@@ -188,7 +222,7 @@ if __name__ == '__main__':
                         help="debug mode")
     # Device
     parser.add_argument("--device", type=str,
-                        dest="device", default='cuda:0',
+                        dest="device", default='cpu',
                         help="gpu: cuda:0; cpu: cpu")
 
     config = parser.parse_args()
