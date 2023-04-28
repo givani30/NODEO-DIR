@@ -1,5 +1,9 @@
-# NODEO-DIR
-[CVPR 2022] NODEO: A Neural Ordinary Differential Equation Based Optimization Framework for Deformable Image Registration
+# NODEO-2D
+A 2D implementation of the NODEO framework
+#Dependencies:
+- Pytorch
+- nilearn
+- nibabel
 # Usage
 Run Registration.py
 
