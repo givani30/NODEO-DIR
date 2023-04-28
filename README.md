@@ -1,3 +1,8 @@
+---
+title: 'Reproducibility of NODEO: A Neural Ordinary Differential Equation Based Optimization Framework for Deformable Image Registration '
+disqus: hackmd
+---
+
 Reproducibility of NODEO: A Neural Ordinary Differential Equation Based Optimization Framework for Deformable Image Registration
 ===
 Authors:
